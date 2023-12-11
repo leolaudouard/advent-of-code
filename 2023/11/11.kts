@@ -1,6 +1,8 @@
 import java.io.File
 import java.util.*
 import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.time.measureTime
 
 fun main() {
@@ -11,7 +13,7 @@ fun main() {
 }
 main()
 
-data class Input(val lines: List<Point>)
+data class Input(val lines: List<Point>, val xWithExtraCost: List<Int>, val yWithExtraCost: List<Int>)
 sealed interface Point {
     val pos: Pos
 }
@@ -54,7 +56,7 @@ fun getInput(fileName: String): Input {
     println("Max X is ${linesWithDuplicate.first().size}")
 
 
-    val lineParsed = linesWithDuplicate.mapIndexed { y, line ->
+    val lineParsed = splitted.mapIndexed { y, line ->
         line.mapIndexed { x, char ->
             val pos = Pos(x = x.toLong(), y = y.toLong())
             if (char == '.') EmptySpace(pos) else if (char == '#') Galaxy(
@@ -63,7 +65,7 @@ fun getInput(fileName: String): Input {
             ) else throw Exception("Parsing issue; Not a galaxy nor an empty space $char $x $y")
         }
     }.flatten()
-    return Input(lineParsed)
+    return Input(lineParsed, verticalDuplicatedXList.map { it.index },horizontalDuplicatedYList.map { it.index })
 }
 
 fun printInput(input: Input) {
@@ -109,11 +111,11 @@ fun solve(input: Input): Long {
         }
     }
     val galaxyPairs = pairsSet.map { (galaxy, otherGalaxy) ->
-        GalaxyPair(galaxy, otherGalaxy, galaxy.distance(otherGalaxy))
+        GalaxyPair(galaxy, otherGalaxy, galaxy.distance(otherGalaxy, input))
     }
     println("Galaxies count ${galaxies.size}")
     println("Pair count ${galaxyPairs.size}")
-    printInput(input)
+    //printInput(input)
     return galaxyPairs.sumOf {
         it.cost
     }
@@ -123,8 +125,14 @@ fun GalaxyPair.notAlreadyInList(galaxyPairs: List<GalaxyPair>) = galaxyPairs.fin
     pair.first.id in listOf(this.first.id, this.second.id) && pair.second.id in listOf(this.first.id, this.second.id)
 } == null
 
-fun Galaxy.distance(galaxy: Galaxy): Long {
+fun Galaxy.distance(galaxy: Galaxy, input: Input): Long {
     val xDistance = (this.pos.x - galaxy.pos.x).absoluteValue
+    val maxX = max(this.pos.x, galaxy.pos.x)
+    val minX = min(this.pos.x, galaxy.pos.x)
+    val maxY = max(this.pos.y, galaxy.pos.y)
+    val minY = min(this.pos.y, galaxy.pos.y)
     val yDistance = (this.pos.y - galaxy.pos.y).absoluteValue
-    return xDistance + yDistance
+    val xWithExtraCost = input.xWithExtraCost.filter { it <= maxX && it >= minX }.size.toLong()
+    val yWithExtraCost = input.yWithExtraCost.filter { it <= maxY && it >= minY }.size.toLong()
+    return xDistance + yDistance + (1_000_000-1)*(xWithExtraCost+yWithExtraCost)
 }

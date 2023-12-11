@@ -1,8 +1,6 @@
 import java.io.File
 import java.util.*
 import kotlin.math.absoluteValue
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.time.measureTime
 
 fun main() {
@@ -26,7 +24,7 @@ data class Universe(val galaxies: Set<Galaxy>, val emptySpaces: Set<EmptySpace>)
 fun getInput(fileName: String): Input {
     val file = File(fileName).readText()
     val splitted = file.split("\n")
-    val horizontalDuplicated: List<IndexedValue<String>> = splitted.withIndex().filter { line ->
+    val horizontalDuplicatedYList: List<IndexedValue<String>> = splitted.withIndex().filter { line ->
         line.value.all { it == '.' }
     }
 
@@ -38,7 +36,7 @@ fun getInput(fileName: String): Input {
         }
     }
     val newList = splitted.toMutableList()
-    horizontalDuplicated.mapIndexed() { int, toAdd ->
+    horizontalDuplicatedYList.reversed().map { toAdd ->
         newList.add(toAdd.index + 1, toAdd.value)
     }
 
@@ -50,7 +48,7 @@ fun getInput(fileName: String): Input {
         }
     }
 
-    println("Horizontal duplicate: ${horizontalDuplicated.size}")
+    println("Horizontal duplicate: ${horizontalDuplicatedYList.size}")
     println("Vertical duplicate: ${verticalDuplicatedXList.size}")
     println("Max Y is ${linesWithDuplicate.size}")
     println("Max X is ${linesWithDuplicate.first().size}")

@@ -186,6 +186,7 @@ tailrec fun explore(
         } else {
             costMap + mapOf(newPos to newCost)
         }
+
         explore(
             newPoint,
             map,

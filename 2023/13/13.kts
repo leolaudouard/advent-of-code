@@ -1,5 +1,4 @@
 import java.io.File
-import kotlin.math.absoluteValue
 import kotlin.time.measureTime
 
 fun main() {
@@ -20,16 +19,6 @@ fun mainMeasuringTime(someFun: () -> Int, toPrint: String) {
     println("$toPrint $funTime")
 
 }
-/*
-To summarize your pattern notes, add up the number of columns to the left of each vertical line of reflection; to that, also add 100 multiplied by the number of rows above each horizontal line of reflection. In the above example, the first pattern's vertical line has 5 columns to its left and the second pattern's horizontal line has 4 rows above it, a to
-1 #...##..# 1
-2 #....#..# 2
-3 ..##..### 3
-4v#####.##.v4
-5^#####.##.^5
-6 ..##..### 6
-7 #....#..# 7
- */
 
 fun getInput(fileName: String): Input {
     val file = File(fileName).readText()
@@ -53,17 +42,11 @@ fun getReflectionRowIndex(pattern: List<String>): Int {
         val subListBefore = pattern.subList(0, x)
         val subListAfter = pattern.subList(x, pattern.size)
         if ((subListAfter.size == subListBefore.size)) {
-            subListBefore.reversed() == subListAfter
+            //part1: subListBefore.reversed() == subListAfter
+            compareAllowExactlyOne(subListBefore.reversed(), subListAfter)
         } else {
             if (subListAfter.isEmpty() or subListBefore.isEmpty()) return@find false
-            //println("Should pass here")
-            //println("Sublist before")
-            //println(subListBefore.joinToString("\n"))
-            //println("Sublist after")
-            //println(subListAfter.joinToString("\n"))
-            if (subListAfter.size > subListBefore.size) {
-                subListAfter.dropLast(subListAfter.size - subListBefore.size).reversed() == subListBefore
-            } else subListBefore.drop(subListBefore.size - subListAfter.size).reversed() == subListAfter
+            compareDifferentSize(subListAfter, subListBefore)
         }
     }
     return foundPoint ?: 0
@@ -81,21 +64,35 @@ fun getReflectionColIndex(pattern: List<String>): Int {
     }.sortedBy { it.first }
 
     val foundPoint = (0..pattern.first().length).find { y ->
-        val subListBefore = cols.subList(0, y).map { it.second }
-        val subListAfter = cols.subList(y, pattern.first().length).map { it.second }
+        val subListBefore = cols.subList(0, y).map { it.second.map { (_, char) -> char }.joinToString("") }
+        val subListAfter = cols.subList(y, pattern.first().length).map { it.second.map { (_, char) -> char}.joinToString("")}
         if ((subListAfter.size == subListBefore.size)) {
-            subListBefore.reversed() == subListAfter
+            //part1: subListBefore.reversed() == subListAfter
+            compareAllowExactlyOne(subListBefore.reversed(), subListAfter)
         } else {
             if (subListAfter.isEmpty() or subListBefore.isEmpty()) return@find false
-            //println("Should pass here")
-            //println("Sublist before")
-            //println(subListBefore.joinToString("\n"))
-            //println("Sublist after")
-            //println(subListAfter.joinToString("\n"))
-            if (subListAfter.size > subListBefore.size) {
-                subListAfter.dropLast(subListAfter.size - subListBefore.size).reversed() == subListBefore
-            } else subListBefore.drop(subListBefore.size - subListAfter.size).reversed() == subListAfter
+            compareDifferentSize(subListAfter, subListBefore)
         }
     }
     return foundPoint ?: 0
+}
+
+fun compareAllowExactlyOne(list: List<String>, otherList: List<String>): Boolean {
+    val charDiffCount = list.zip(otherList).map { (line, otherLine) ->
+        line.toList().zip(otherLine.toList()).filter { (char, otherChar) ->
+            char != otherChar
+        }.size
+    }.sum()
+    return charDiffCount == 1
+}
+
+fun compareDifferentSize(
+    subListAfter: List<String>,
+    subListBefore: List<String>
+) = if (subListAfter.size > subListBefore.size) {
+    // part1: subListAfter.dropLast(subListAfter.size - subListBefore.size).reversed() == subListBefore
+    compareAllowExactlyOne(subListAfter.dropLast(subListAfter.size - subListBefore.size).reversed(), subListBefore)
+} else {
+    // part1: subListBefore.drop(subListBefore.size - subListAfter.size).reversed() == subListAfter
+    compareAllowExactlyOne(subListBefore.drop(subListBefore.size - subListAfter.size).reversed(), subListAfter)
 }

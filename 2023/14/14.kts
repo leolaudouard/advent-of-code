@@ -4,8 +4,8 @@ import kotlin.time.measureTime
 fun main() {
     val inputTest = getInput("inputTest.txt")
     mainMeasuringTime({ solve(inputTest) }, "InputTest")
-    //val input = getInput("input.txt")
-    //mainMeasuringTime({ solve(input) }, "Input")
+    val input = getInput("input.txt")
+    mainMeasuringTime({ solve(input) }, "Input")
 }
 main()
 
@@ -56,13 +56,12 @@ fun Symbol.toChar(): Char = when (this) {
     Symbol.Empty -> '.'
     Symbol.CubeRock -> '#'
     Symbol.RollRock -> 'O'
-    else -> throw Exception("Unknown symbol $this")
 }
 
 fun solve(input: Input): Int {
     val maxY: Int = input.grid.toList().maxBy { (p, _) -> p.y }.first.y + 1
     println("Go sumOf $maxY")
-    val sumList = input.grid.toList().filter { (p, s) ->
+    val sumList = input.grid.toList().filter { (_, s) ->
         s == Symbol.RollRock
     }.groupBy { (p, _) -> p.y }.map { (y, list) -> y to list.size }
     println("Sumlist ${sumList.joinToString("\n")}")
@@ -81,35 +80,60 @@ fun Char.toSymbol() = when (this) {
 
 
 fun Grid<Symbol>.multiCycle(count: Int = 1): Grid<Symbol> {
-    val cacheHasMap = hashMapOf<Grid<Symbol>, Grid<Symbol>>()
-    return (1..count).fold(this) { acc, i ->
-        println(i)
-        val newAccOrNull =  cacheHasMap.get(acc)
-        if (newAccOrNull != null) {
-            newAccOrNull
+    val gridHashCodes = mutableListOf(this.hashCode())
+    var grid = this
+    var loop = true
+    var i = 0
+    var patternSize: Int? = null
+    while (loop) {
+        i++
+        if (i == count) loop = false
+        val directions = listOf('N', 'W', 'S', 'E')
+        val newAcc = directions.fold(grid) { gridAcc, dir ->
+            val g = gridAcc.tilt(dir)
+            gridHashCodes.add(gridHashCodes.size, g.hashCode())
+            g
+        }
+        if (gridHashCodes.isNotEmpty()) {
+            patternSize = shouldStopLoop(gridHashCodes.toList())
+            if (patternSize != null) {
+                loop = false
+            }
+        }
+
+        grid = newAcc
+    }
+    var rest = i
+    println("Loop stopped at $i.")
+    var loop2 = true
+    while (loop2) {
+        val newRest = rest + patternSize!!
+        if (newRest <= count) {
+            rest = newRest
         } else {
-            val newAcc = acc.cycle()
-            cacheHasMap[acc] = newAcc
-            newAcc
+            loop2 = false
         }
     }
-}
-
-fun Grid<Symbol>.cycle(): Grid<Symbol> {
-    val directions = listOf('N', 'W', 'S', 'E')
-    return directions.fold(this) {  grid, dir ->
-        grid.tilt(dir)
+    println("Jump to $rest")
+    // Loop stopped at 2. Rest is 1, 999999998
+    return (rest+1..count).fold(grid) { acc, _ ->
+        val directions = listOf('N', 'W', 'S', 'E')
+        val newAcc = directions.fold(acc) { grid, dir ->
+            grid.tilt(dir)
+        }
+        newAcc
     }
 }
+
 fun Grid<Symbol>.tilt(dir: Char): Grid<Symbol> = this.toList().fold(this) { acc, (pos, symbol) ->
-    if (symbol == Symbol.RollRock) roll(acc, pos, symbol, dir) else acc
+    if (symbol == Symbol.RollRock) roll(acc, pos, dir) else acc
 }
 
-fun roll(acc: Grid<Symbol>, pos: Pos, symbol: Symbol, dir: Char): Map<Pos, Symbol> {
+fun roll(acc: Grid<Symbol>, pos: Pos, dir: Char): Map<Pos, Symbol> {
     val isVertical = (dir == 'N' || dir == 'S')
     val sorted = acc.toList().filter { (p, _) ->
         if (isVertical) pos.x == p.x else pos.y == p.y
-    }.sortedBy { (p, _) ->
+    }.sortedBy { (_, _) ->
         if (isVertical) pos.y else pos.x
     }
     val subList = when (dir) {
@@ -119,7 +143,8 @@ fun roll(acc: Grid<Symbol>, pos: Pos, symbol: Symbol, dir: Char): Map<Pos, Symbo
         'E' -> sorted.subList(pos.x, sorted.size)
         else -> throw Exception("Unknown dir $dir")
     }
-    val emptySymbolsList = subList.maybeReversed(dir).takeWhile { (_, s) -> s == Symbol.Empty || s == Symbol.RollRock }.filter { (_,s) -> s == Symbol.Empty }
+    val emptySymbolsList = subList.maybeReversed(dir).takeWhile { (_, s) -> s == Symbol.Empty || s == Symbol.RollRock }
+        .filter { (_, s) -> s == Symbol.Empty }
     val newPos = emptySymbolsList.lastOrNull()?.let { (p, _) -> p }
     return if (newPos != null) {
         acc.plus(newPos to Symbol.RollRock).plus(pos to Symbol.Empty)
@@ -136,3 +161,19 @@ fun <T> List<T>.maybeReversed(dir: Char): List<T> =
 
         else -> throw Exception("Unknown dir $dir")
     }
+
+
+fun <T>shouldStopLoop(grids: List<T>): Int? {
+    val last = grids.last()
+    val patternWithoutLast = grids.dropLast(1).takeLastWhile { it != last }
+    val pattern = patternWithoutLast + last
+    val to = grids.size - pattern.size
+    val from = to - pattern.size
+
+    return if (from >= 0) {
+        val beforePattern = grids.subList(from, to)
+        if (beforePattern == pattern) {
+            pattern.size
+        } else null
+    } else null
+}

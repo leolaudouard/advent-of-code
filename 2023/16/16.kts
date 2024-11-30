@@ -1,5 +1,8 @@
 import _16.Side.*
 import java.io.File
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.math.max
+import kotlin.system.exitProcess
 import kotlin.time.measureTime
 
 fun main() {
@@ -25,7 +28,7 @@ data class Input(val list: List<String>)
 enum class Side { R, L, T, B }
 data class Key(val x: Int, val y: Int, val side: Side)
 
-data class Visited(val visitedPoses: Set<Pair<Int, Int>>, val lasersHistory: List<Key>)
+data class Visited(val lasersHistory: List<Key>)
 
 fun getInput(fileName: String): Input {
     val file = File(fileName).readText()
@@ -34,40 +37,55 @@ fun getInput(fileName: String): Input {
 }
 
 fun solve(input: Input): Number {
+    val maxX = input.list.first().length
+    val maxY = input.list.size
+    val queue = LinkedBlockingQueue<Int>()
     val lasers = listOf(Key(-1, 0, R))
-    val visited = Visited(setOf(-1 to 0), lasers)
-    val visitedPoses2 = recurse(lasers, input, visited)
-    /*
-        var loop = true
-        while (loop) {
-            val (newLasers, newVisited) = travel(lasers, input.list, visited)
-            //&& newVisited.lasersHistory.toList()
-            //                .last() in visited.lasersHistory.toList()
-            if (newVisited.keys().distinct() == visited.keys().distinct()
-            ) {
-                loop = false
-            }
-            lasers = newLasers.toMutableMap()
-            //newVisited.keys().print(input.list.first().length, input.list.size)
-            visited = newVisited
-        }
-    */
+    getThat(lasers, input, maxX, maxY, queue).join()
+    val size = queue.max()
+    println("Part 1 $size")
+    val threads = (0..maxY).map { y ->
+        val lasers = listOf(Key(-1, y, R), Key(maxX + 1, y, L))
+        getThat(lasers, input, maxX, maxY, queue)
+    }
+    val moreThreads = (0..maxX).map { x ->
+        val lasers = listOf(Key(x, -1, B), Key(x, maxY + 1, T))
+        getThat(lasers, input, maxX, maxY, queue)
+    }
 
-    val visitedPoses = visitedPoses2.lasersHistory
-    visitedPoses.print(input.list.first().length, input.list.size)
-    return visitedPoses.size(input.list.first().length, input.list.size)
+    (threads + moreThreads).map { it.join() }
+    return queue.max()
 }
 
-tailrec fun recurse(lasers: List<Key>, input: Input, visited: Visited): Visited {
-    val (newLasers, newVisited) = travel(lasers, input.list, visited)
-    //newVisited.keys().print(input.list.first().length, input.list.size)
-    println("Travalled visited poses: ${newVisited.visitedPoses.size}, lasers count: ${newLasers.size}")
+fun getThat(lasers: List<Key>, input: Input, maxX: Int, maxY: Int, queue: LinkedBlockingQueue<Int>): Thread {
+    val thread = Thread(
+    ) {
+        val visited = Visited(lasers)
+        val visitedPoses = recurse(lasers, input, visited, maxX, maxY)
+        val size = visitedPoses.lasersHistory.size(maxX, maxY)
+        //println(size)
+        queue.add(size)
+    }
+    thread.start()
+    return thread
+}
+
+tailrec fun recurse(lasers: List<Key>, input: Input, visited: Visited, maxX: Int, maxY: Int): Visited {
+    val (newLasers, newVisited) = travel(lasers, input.list, visited, maxX, maxY)
+    //newVisited.lasersHistory.print(input.list.first().length, input.list.size)
+    //val size = newVisited.lasersHistory.size(input.list.first().length, input.list.size)
+    //println("Size: $size, Lasers count: ${newLasers.size}")
     return if (newVisited.lasersHistory.distinct() == visited.lasersHistory.distinct()) {
         newVisited
-    } else recurse(newLasers, input, newVisited)
+    } else recurse(
+        newLasers,
+        input,
+        newVisited.copy(lasersHistory = newVisited.lasersHistory),
+        maxX, maxY
+    )
 }
 
-fun travel(lasers: List<Key>, lines: List<String>, visited: Visited): Pair<List<Key>, Visited> {
+fun travel(lasers: List<Key>, lines: List<String>, visited: Visited, maxX: Int, maxY: Int): Pair<List<Key>, Visited> {
     return lasers.fold(listOf<Key>() to visited) { (lasersAcc, visitedAcc), laser ->
         val newPos = when (laser.side) {
             T -> laser.x to laser.y - 1
@@ -82,11 +100,11 @@ fun travel(lasers: List<Key>, lines: List<String>, visited: Visited): Pair<List<
         }
         val currentHistory = visitedAcc.lasersHistory + newLasers
         val newVisited = visitedAcc.copy(
-            visitedPoses = (visitedAcc.visitedPoses + newLasers.map { it.x to it.y }),
-            //lasersHistory = visitedAcc.lasersHistory + (visitedAcc.lasersHistory + newLasers)
-            lasersHistory = currentHistory
+            lasersHistory = currentHistory.distinct()
         )
-        (lasersAcc + newLasers) to newVisited
+        (lasersAcc + newLasers.filter { it !in visited.lasersHistory && it.x in (-1..maxX + 1) && it.y in (-1..maxY + 1) }) to newVisited
+    }.let { (lasers, visited) ->
+        lasers to visited
     }
 }
 
@@ -147,13 +165,11 @@ fun List<Key>.print(maxX: Int, maxY: Int) {
 }
 
 fun List<Key>.size(maxX: Int, maxY: Int): Int {
-    var size = 0
-    (0..maxY).map { y ->
-        (0..maxX).map { x ->
-            if (this.find { key -> key.x == x && key.y == y } != null) {
-                size += 1
-            }
-        }
-    }
-    return size
+    return this.map { it.x to it.y }.distinct().filter { (x, y) ->
+        x in 0..maxX && y in 0..maxY
+    }.size
+}
+
+fun List<Key>.sorted(): Any {
+    return this.sortedBy {  it.x}.sortedBy { it.y }.sortedBy { it.side }
 }

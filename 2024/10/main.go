@@ -90,14 +90,27 @@ func getTrailheads(input Input, startPoint point) []point {
 }
 
 func part2(input Input) int {
-	return 0
+
+	startPoints := []point{}
+	for x, line := range input.lines {
+		for y, char := range line {
+			if string(char) == "0" {
+				startPoints = append(startPoints, point{0, x, y})
+			}
+		}
+	}
+	result := lo.Map(startPoints, func(startPoint point, _ int) int {
+		return len(getTrailheads(input, startPoint))
+	})
+	fmt.Println(result)
+	return lo.Sum(result)
 }
 
 func main() {
 	run(input, 1, "inputTest")
 	run(input, 1, "input")
-	//run(input, 2, "inputTest")
-	//run(input, 2, "inputTest")
+	run(input, 2, "inputTest")
+	run(input, 2, "input")
 }
 
 func run(input string, part int, inputType string) {

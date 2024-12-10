@@ -1,11 +1,12 @@
 package main
 
 import (
-    _ "embed"
-    "fmt"
-    "slices"
-    "strconv"
-    "strings"
+	"github.com/samber/lo"
+	_ "embed"
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 //go:embed inputTest.txt
@@ -105,20 +106,16 @@ func part2(input Input) int {
             }
         }
     }
-    sum := 0
-    newBlocksFlatten := []string{}
+    newBlocksFlatten := lo.FlatMap(newBlocks, func(b block, _ int) []string {
+        return lo.Times(b.size, func(_ int) string{
+            return b.value
+        })
+    })
 
-    for _, b := range newBlocks {
-        for i := 0; i <= b.size -1 ; i++ {
-            newBlocksFlatten = append(newBlocksFlatten, b.value)
-        }
-    }
-
-    for i, b := range newBlocksFlatten {
-        intValue, _ := strconv.Atoi(b)
-        sum += i*intValue    
-    }
-    return sum
+    return lo.Reduce(newBlocksFlatten, func(acc int, value string, i int) int {
+        intValue, _ := strconv.Atoi(value)
+        return acc + i*intValue
+    }, 0)
 }
 
 

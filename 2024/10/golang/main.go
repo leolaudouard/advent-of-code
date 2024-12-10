@@ -40,28 +40,19 @@ func part2(input Input) int {
 
 func main() {
     run(input, 1, "inputTest")
-    run(input, 1, "input")
-    //run(input, 2, "inputTest")
-    //run(input, 2, "inputTest")
+    run(input, 1, "inputTest")
+    run(input, 2, "input")
+    run(input, 2, "input")
 }
 
 func run(input string, part int, inputType string) {
     fmt.Printf("Result part %v %v", part, inputType)
     var result int 
     if part == 1 {
-        if inputType == "inputTest" {
-        result = part1(parse(inputTest))
-        } else {
-        result = part1(parse(input))
-        }
-    } else {
-        if inputType == "inputTest" {
-        result = part2(parse(inputTest))
-        } else {
         result = part2(parse(input))
-        }
+    } else {
+        result = part2(parse(input))
     }
     fmt.Println()
     fmt.Println(result)
-    fmt.Println()
 }

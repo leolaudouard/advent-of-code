@@ -32,41 +32,69 @@ func parse(value string) Input {
 }
 
 func part1(input Input) int {
-	return solve(input, 25)
+	return solve(input.lines, 25)
 }
 
-func solve(input Input, count int) int {
-	lines := input.lines
-	fmt.Println("Initial arrangement:")
-	fmt.Printf("%v", lines)
-	for y := 1; y <= count; y++ {
-		fmt.Printf("After %d blink:", y)
-		fmt.Println()
-		lines = blink(lines)
+func solve(line []int, count int) int {
+	frequencyMap := map[int]int{}
+	for _, value := range line {
+		frequencyMap[value] += 1
 	}
-	return len(lines)
+
+	for i := 1; i <= count; i++ {
+		frequencyMapCopy := map[int]int{}
+		for value, frequency := range frequencyMap {
+			frequencyMapCopy[value] = frequency
+		}
+
+		for value, frequency := range frequencyMapCopy {
+			strValue := strconv.Itoa(value)
+			frequencyMap[value] -= frequency
+
+			if value == 0 {
+				frequencyMap[1] += frequency
+			} else if len(strValue)%2 == 0 {
+
+				splitAt := len(strValue) / 2
+				first, _ := strconv.Atoi(strValue[0:splitAt])
+				second, _ := strconv.Atoi(strValue[splitAt:])
+
+				frequencyMap[first] += frequency
+				frequencyMap[second] += frequency
+			} else {
+				newValue := value * 2024
+				frequencyMap[newValue] += frequency
+			}
+		}
+
+	}
+	return lo.Sum(lo.Values(frequencyMap))
 }
 
 func blink(lines []int) []int {
 	resut := lo.Reduce(lines, func(acc []int, value int, _ int) []int {
-		if value == 0 {
-			return append(acc, 1)
-		}
-		strValue := strconv.Itoa(value)
-		if len(strValue)%2 == 0 {
-			splitAt := len(strValue) / 2
-			first, _ := strconv.Atoi(strValue[0:splitAt])
-			second, _ := strconv.Atoi(strValue[splitAt:])
-
-			return append(acc, []int{first, second}...)
-		}
-		return append(acc, value*2024)
+		return append(acc, next(value)...)
 	}, []int{})
 	return resut
 }
 
+func next(value int) []int {
+	if value == 0 {
+		return []int{1}
+	}
+	strValue := strconv.Itoa(value)
+	if len(strValue)%2 == 0 {
+		splitAt := len(strValue) / 2
+		first, _ := strconv.Atoi(strValue[0:splitAt])
+		second, _ := strconv.Atoi(strValue[splitAt:])
+
+		return []int{first, second}
+	}
+	return []int{value * 2024}
+}
+
 func part2(input Input) int {
-	return solve(input, 75)
+	return solve(input.lines, 75)
 }
 
 func main() {

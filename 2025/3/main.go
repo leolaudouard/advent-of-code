@@ -71,16 +71,12 @@ func part2(input Input) int {
 }
 
 func joltagePart2(bank []string, joltageAcc string, digits int) int {
-	fmt.Println("joltagePart2", joltageAcc)
 	if digits == 0 {
-		fmt.Println("Stop with digits", digits)
 	  joltage, _ := strconv.Atoi(joltageAcc)
 		return joltage
 	}
-	i, maxValue := maxWithIndex(bank[:len(bank)-digits])
-	nextMaxValue := slices.Max(bank[i+1:])
-	newAcc := joltageAcc + maxValue + nextMaxValue
-	fmt.Println("newAcc", maxValue, nextMaxValue, newAcc)
+	i, maxValue := maxWithIndex(bank[:len(bank)-digits + 1])
+	newAcc := joltageAcc + maxValue
 	return joltagePart2(bank[i+1:], newAcc, digits - 1)
 }
 

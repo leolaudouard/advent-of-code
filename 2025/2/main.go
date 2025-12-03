@@ -67,7 +67,6 @@ func part2(input Input) int {
 		nums := strings.Split(r, "-")
 		left, _ := strconv.Atoi(nums[0])
 		right, _ := strconv.Atoi(nums[1])
-		fmt.Println("Coucou ", left, right)
 		for value := left; value <= right; value++ {
 				if (isInvalidPart2(value)) {
 					invalidIds = append(invalidIds, value)
@@ -79,7 +78,6 @@ func part2(input Input) int {
 	for i := range invalidIds {
 		invalidId := invalidIds[i]
 		sum += invalidId
-	  fmt.Println("Invalid id %v", invalidId)
 	}
 	return sum
 }
@@ -92,20 +90,17 @@ func isInvalidPart2(value int) bool {
 	valueStr := strconv.Itoa(value)
 	middle := len(valueStr)/2
 	for i := 1; i <= middle; i++ {
-		firstPart := valueStr[:i]
-		secondPart := valueStr[i:]
-		if (i <= len(secondPart)) {
-			allValid := true
-			for anotherI := i; anotherI <= len(secondPart);anotherI+=i {
-				rest := secondPart[anotherI-i:anotherI]
-				if value == 1010 {
-					fmt.Println("WTF", rest, anotherI, i, secondPart)
-				}
-				if (rest != firstPart) {
-					allValid = false
-				}
+		pattern := valueStr[:i]
+		allMatch := true
+		for j := i; j+i<=len(valueStr);j+=i {
+			rest := valueStr[j:j+i]
+			if rest != pattern {
+				allMatch = false
 			}
-			return allValid
+		}
+
+		if allMatch && (len(valueStr) % i == 0) {
+			return true
 		}
 	}
 	return false

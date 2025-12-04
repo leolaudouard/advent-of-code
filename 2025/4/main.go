@@ -28,25 +28,31 @@ func parse(value string) Input {
 }
 
 func part1(input Input) int {
-	sum := 0
 	fmt.Println()
-	for y, line := range input.lines {
+
+	next, sum := removeRolls(input.lines)
+	printInput(next)
+	return sum
+}
+
+func removeRolls(lines []string) ([]string, int) {
+	sum := 0
+	var nextLines []string
+	for y, line := range lines {
+		runes := []rune(line)
 		for x, char := range strings.Split(line, "") {
 			if (char == "@") {
-				adjacentRollsCount := adjacentRollsCount(input.lines, x, y)
+				adjacentRollsCount := adjacentRollsCount(lines, x, y)
 				if (adjacentRollsCount < 4) {
-					fmt.Print("x")
+					runes[x] = 'x'
 					sum++
-				} else {
-					fmt.Print(char)
 				}
-			} else {
-				fmt.Print(char)
 			}
 		}
-		fmt.Println()
+		nextLines = append(nextLines, string(runes))
 	}
-	return sum
+
+	return nextLines, sum
 }
 
 func adjacentRollsCount(lines []string, x int, y int) int {
@@ -72,32 +78,23 @@ func adjacentRollsCount(lines []string, x int, y int) int {
 }
 
 func part2(input Input) int {
-	rollsRemovedTotal := 0
-	printInput(input)
+	printInput(input.lines)
 	shouldContinue := true
+	next := input.lines
+	rollsRemovedTotal := 0
 	for shouldContinue {
-		rollsRemoved := 0
-		for y, line := range input.lines {
-			runes := []rune(line)
-			for x, char := range string(line) {
-				if (char == '@') {
-					adjacentRollsCount := adjacentRollsCount(input.lines, x, y)
-					if (adjacentRollsCount < 4) {
-						runes[x] = 'x'
-						rollsRemoved++
-					}
-				}
-			}
-			input.lines[y] = string(runes)
-		}
-		fmt.Println("Rolls removed ", rollsRemoved)
+		sum := 0
+		next, sum = removeRolls(next)
+		rollsRemovedTotal += sum
+		
+		fmt.Println("Rolls removed ", sum)
 		fmt.Println()
-		if rollsRemoved == 0 {
+		if sum == 0 {
 			shouldContinue = false
 		}
 
 
-		printInput(input)
+		printInput(input.lines)
 
 		for y, line := range input.lines {
 			runes := []rune(line)
@@ -113,9 +110,9 @@ func part2(input Input) int {
 }
 
 
-func printInput(input Input) {
+func printInput(lines []string) {
 		fmt.Println()
-		for _, line := range input.lines {
+		for _, line := range lines {
 			for _, char := range string(line) {
 					fmt.Print(string(char))
 			}

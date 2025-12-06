@@ -11,63 +11,80 @@ import (
 )
 
 type Input struct {
-	nums [][]uint64
-	ops []string
+	nums []string
+	ops []Op
+}
+
+type Op struct {
+	op string
+	i int
 }
 
 func parse(value string) Input {
-	var nums [][]uint64
 	lines := strings.Split(value, "\n")
-	var ops []string
-	for _, op := range lines[len(lines)-2] {
+
+	var ops []Op
+	for i, op := range lines[len(lines)-2] {
 		if op == '*' || op == '+' {
-			ops = append(ops, string(op))
+			stuff := Op{
+				string(op), 
+				i,
+			}
+			ops = append(ops, stuff)
 		}
 	}
 
-	for _, value := range lines[:len(lines)-2] {
-	  numsStr := strings.Fields(value)
-		for i, numStr := range numsStr {
-			  num, _ := strconv.ParseUint(numStr, 10, 64)
-				fmt.Println(num)
-				if len(nums) > i {
-					nums[i] = append(nums[i], num)
-				} else {
-					var properStuff []uint64
-					properStuff = append(properStuff, num)
-					nums = append(nums, properStuff)
-
-				}
+	numLines := lines[:len(lines)-2]
+	var nums []string
+	for j, char := range string(numLines[0]) {
+		acc := string(char)
+		for i:=1;i<len(numLines);i++ {
+			acc += string(numLines[i][j])
 		}
+		nums = append(nums, acc)
 	}
 
+
+	opsI := 0
+	op := ops[opsI].op
+	var sum uint64
+	if op == "*" {
+		sum = 1
+	} else if op == "+" {
+		sum = 0
+	}
+	var totalSum uint64
+	totalSum = 0
+	for _, str := range nums {
+		if strings.TrimSpace(str) == "" {
+			opsI++
+			op = ops[opsI].op
+			totalSum += sum
+			if op == "*" {
+				sum = 1
+			} else if op == "+" {
+				sum = 0
+			}
+		} else {
+			num, _ := strconv.ParseUint(strings.TrimSpace(str), 10, 64)
+			if op == "*" {
+				sum = sum*num
+			} else if op == "+" {
+				sum += num
+			}
+		}
+
+	}
+	fmt.Println()
+	fmt.Println("Result is ", totalSum + sum)
 	return Input{
 		nums,
 		ops,
 	}
 }
 
+
 func part1(input Input) int {
-	var totalSum uint64
-	totalSum = 0
-	for i, nums := range input.nums {
-		op := input.ops[i]
-		var sum uint64
-		if (op == "*") {
-			sum = 1
-		} else if op == "+" {
-			sum = 0
-		}
-		for _, num := range nums {
-		  if (op == "*") {
-				sum = sum*num
-		  } else if op == "+" {
-				sum += num
-		  }
-		}
-		totalSum += sum
-	}
-	fmt.Println(totalSum)
 	return 0
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"github.com/samber/lo"
 	_ "embed"
 	"fmt"
 	"os"
@@ -15,12 +14,12 @@ type Input struct {
 	maxX  int
 	maxY  int
 	ranges []Range
-	numbers []int64
+	numbers []uint64
 }
 
 type Range struct {
-	before int64
-	after int64
+	before uint64
+	after uint64
 }
 
 func parse(value string) Input {
@@ -34,17 +33,17 @@ func parse(value string) Input {
 		}
 	}
 	numbersStr := lines[index+1:]
-	var numbers []int64
+	var numbers []uint64
 	for _, numberStr := range numbersStr {
-		number, _ := strconv.ParseInt(numberStr, 10, 64)
+		number, _ := strconv.ParseUint(numberStr, 10, 64)
 		numbers = append(numbers, number)
 	}
 
 	var ranges []Range
 	for _, rg := range lines[:index] {
 		ok := strings.Split(rg, "-")
-		before, _ := strconv.ParseInt(ok[0], 10, 64)
-		after, _ := strconv.ParseInt(ok[1], 10, 64)
+		before, _ := strconv.ParseUint(ok[0], 10, 64)
+		after, _ := strconv.ParseUint(ok[1], 10, 64)
 		ranges = append(ranges, Range{before, after})
 	}
 	return Input{
@@ -70,7 +69,7 @@ func part1(input Input) int {
 	return freshSum
 }
 
-func isFresh(number int64, ranges []Range) bool {
+func isFresh(number uint64, ranges []Range) bool {
 	for _, rg := range ranges {
 		if number >= rg.before && number <= rg.after {
 			return true
@@ -81,9 +80,146 @@ func isFresh(number int64, ranges []Range) bool {
 }
 
 func part2(input Input) int {
-	return 2
+	currentRanges := input.ranges
+	overlap := true
+	loop := 0
+	var maxR uint64
+	maxR = 0
+	var minR uint64
+	minR = 100000000000000
+	for _, rg := range input.ranges {
+		if rg.after > maxR {
+			maxR = rg.after
+		}
+
+		if rg.before < minR {
+			minR = rg.before
+		}
+	}
+
+	for overlap {
+		  loop++
+		  fmt.Println(currentRanges)
+	    currentRanges = mergeRanges(currentRanges)
+			fmt.Println("Looped merge")
+			for _, rg := range currentRanges {
+			  fmt.Println(rg)
+			}
+		  overlap = rangesOverlap(currentRanges)
+	}
+	var sum uint64
+	sum = 0
+	for _, rg := range currentRanges {
+		sum += (rg.after - rg.before + 1)
+		fmt.Println(rg)
+	}
+	var maxR2 uint64
+	maxR2 = 0
+	var minR2 uint64
+	minR2 = 100000000000000
+	for _, rg := range currentRanges {
+		if rg.after > maxR2 {
+			maxR2 = rg.after
+		}
+
+		if rg.before < minR2 {
+			minR2 = rg.before
+		}
+	}
+
+	fmt.Println(sum)
+	fmt.Println("Max is ", maxR)
+	fmt.Println("Max is ", maxR)
+	fmt.Println("min is ", minR)
+	fmt.Println("min is ", minR2)
+	return int(sum)
 }
 
+
+func canBeMerged(rg1 Range, rg2 Range) bool {
+	result := (rg1.before >= rg2.before && rg1.before <= rg2.after) || (rg1.after >= rg2.before && rg1.after <= rg2.after)
+
+	return result
+}
+
+
+func rangesOverlap(ranges []Range) bool {
+  for i, rg1 := range ranges {
+		for j, rg2 := range ranges {
+			if i != j && canBeMerged(rg1, rg2)  {
+				return true
+			}
+		}
+	}
+	return false
+}
+func mergeRanges(ranges []Range) []Range {
+	var currentRanges []Range
+	for _, rg := range ranges {
+		currentRanges = append(currentRanges, rg)
+	}
+
+	var mergedRanges []Range
+	var newRanges []Range
+  for j, rg := range ranges {
+		for i, rg2 := range ranges {
+			if i != j && canBeMerged(rg, rg2) {
+			  newRange := merge(rg, rg2)
+		    fmt.Println("Merging ranges")
+				fmt.Println(rg) 
+				fmt.Println(rg2)
+				fmt.Println(newRange)
+
+				currentRanges = append(currentRanges, newRange)
+				mergedRanges = append(mergedRanges, rg)
+				mergedRanges = append(mergedRanges, rg2)
+				newRanges = append(newRanges, newRange)
+			}
+		}
+	}
+
+	var result []Range
+	for _, rg := range currentRanges {
+		if (!contains(mergedRanges, rg) && !contains(result, rg)) {
+			result = append(result, rg)
+		}
+	}
+
+	for _, rg := range newRanges {
+		if !contains(result, rg) {
+			result = append(result, rg)
+		}
+	}
+
+	return result
+}
+
+func contains(ranges []Range, rg1 Range) bool {
+	for _, rg2 := range ranges {
+		if rg1 == rg2  {
+			return true
+		}
+	}
+	return false
+}
+func merge(rg1 Range, rg2 Range) Range {
+	if isIncluded(rg1, rg2) {
+		return rg1
+	}
+
+	if isIncluded(rg2, rg1) {
+		return rg2
+	}
+
+	return Range{
+		min(rg1.before, rg2.before),
+		max(rg1.after, rg2.after),
+	}
+}
+
+func isIncluded(rg1 Range, rg2 Range) bool {
+	return rg1.before <= rg2.before && rg1.after >= rg2.after
+}
 
 
 
